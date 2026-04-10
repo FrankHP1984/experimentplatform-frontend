@@ -11,11 +11,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // ID del usuario en Supabase Auth (auth.users.id)
+    @Column(unique = true)
+    private String supabaseId;
+
     @Column(nullable = false, unique = true)
     private String email;
-
-    @Column(nullable = false)
-    private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -32,9 +33,9 @@ public class User {
     public User() {
     }
 
-    public User(String email, String password, UserRole role) {
+    public User(String supabaseId, String email, UserRole role) {
+        this.supabaseId = supabaseId;
         this.email = email;
-        this.password = password;
         this.role = role;
     }
 
@@ -46,20 +47,20 @@ public class User {
         this.id = id;
     }
 
+    public String getSupabaseId() {
+        return supabaseId;
+    }
+
+    public void setSupabaseId(String supabaseId) {
+        this.supabaseId = supabaseId;
+    }
+
     public String getEmail() {
         return email;
     }
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public UserRole getRole() {
