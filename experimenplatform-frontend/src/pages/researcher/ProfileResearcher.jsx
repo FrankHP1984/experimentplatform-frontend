@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Sidebar from '../../components/layout/Sidebar'
 import { useAuthStore } from '../../store/authStore'
+import { fetchMe, updateProfile } from '../../api/users'
 import styles from './ProfileResearcher.module.css'
 
 const IconSave = () => (
@@ -74,25 +75,23 @@ export default function ProfileResearcher() {
   const [showToast, setShowToast] = useState(false)
   const [pwdModal, setPwdModal] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [loadingData, setLoadingData] = useState(true)
   
   const [formData, setFormData] = useState({
-    firstName: 'Carlos',
-    lastName: 'Romero Blanco',
-    email: user?.email || 'carlos.romero@universitat.edu',
+    firstName: '',
+    lastName: '',
+    email: user?.email || '',
     language: 'es',
     timezone: 'Europe/Madrid',
-    institution: 'Universitat de Barcelona',
-    department: 'Dpto. de Psicología Experimental',
-    position: 'Investigador postdoctoral',
-    bio: 'Investigador postdoctoral en el área de neurociencia cognitiva y psicología experimental. Interesado en el efecto del ejercicio físico sobre las funciones ejecutivas y el bienestar.',
-    orcid: '0000-0002-1234-5678'
+    institution: '',
+    department: '',
+    position: '',
+    bio: '',
+    orcidId: ''
   })
   
-  const [researchAreas, setResearchAreas] = useState([
-    'Neurociencia cognitiva',
-    'Psicología experimental',
-    'Actividad física y salud'
-  ])
+  const [researchAreas, setResearchAreas] = useState([])
   
   const [notifications, setNotifications] = useState({
     newEnrollment: true,
@@ -102,14 +101,73 @@ export default function ProfileResearcher() {
     platformUpdates: false
   })
 
+  // Cargar datos del usuario al montar
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userData = await fetchMe()
+        setFormData({
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          email: userData.email || '',
+          language: userData.language || 'es',
+          timezone: userData.timezone || 'Europe/Madrid',
+          institution: userData.institution || '',
+          department: userData.department || '',
+          position: userData.position || '',
+          bio: userData.bio || '',
+          orcidId: userData.orcidId || ''
+        })
+      } catch (error) {
+        console.error('Error loading user data:', error)
+      } finally {
+        setLoadingData(false)
+      }
+    }
+    loadUserData()
+  }, [])
+
   const getInitials = (name) => {
     return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
   }
 
-  const handleSave = () => {
-    setShowToast(true)
-    // eslint-disable-next-line no-undef
-    setTimeout(() => setShowToast(false), 2600)
+  const handleSave = async () => {
+    setLoading(true)
+    try {
+      await updateProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        institution: formData.institution,
+        department: formData.department,
+        position: formData.position,
+        bio: formData.bio,
+        orcidId: formData.orcidId,
+        language: formData.language,
+        timezone: formData.timezone
+      })
+      setShowToast(true)
+      // eslint-disable-next-line no-undef
+      setTimeout(() => setShowToast(false), 2600)
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      // eslint-disable-next-line no-undef
+      alert('Error al guardar los cambios')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  if (loadingData) {
+    return (
+      <div className={styles.container}>
+        <Sidebar />
+        <div className={styles.mainArea}>
+          <div style={{ padding: '2rem', color: 'var(--text)' }}>
+            Cargando perfil...
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const handleAddTag = () => {
@@ -137,12 +195,12 @@ export default function ProfileResearcher() {
         <div className={styles.topbar}>
           <div className={styles.topbarTitle}>Mi perfil</div>
           <div className={styles.topbarActions}>
-            <button className={styles.btnGhost} onClick={() => window.location.reload()}>
+            <button className={styles.btnGhost} onClick={() => window.location.reload()} disabled={loading}>
               Descartar cambios
             </button>
-            <button className={styles.btnPrimary} onClick={handleSave}>
+            <button className={styles.btnPrimary} onClick={handleSave} disabled={loading}>
               <IconSave />
-              Guardar cambios
+              {loading ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
         </div>
@@ -300,10 +358,10 @@ export default function ProfileResearcher() {
               </div>
 
               <div className={styles.formActions}>
-                <button className={styles.btnGhost} onClick={() => window.location.reload()}>Descartar</button>
-                <button className={styles.btnPrimary} onClick={handleSave}>
+                <button className={styles.btnGhost} onClick={() => window.location.reload()} disabled={loading}>Descartar</button>
+                <button className={styles.btnPrimary} onClick={handleSave} disabled={loading}>
                   <IconSave />
-                  Guardar cambios
+                  {loading ? 'Guardando...' : 'Guardar cambios'}
                 </button>
               </div>
 
